@@ -1,6 +1,7 @@
 import { Map, MoonStar } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Location from "../components/Location";
+import WeatherOverview from "../components/WeatherOverview";
 
 const HomeScreen = () => {
   return (
@@ -13,7 +14,7 @@ const HomeScreen = () => {
             Perfect viewing conditions tonight
           </Text>
         </View>
-               {/*buttons*/}
+        {/*buttons*/}
         <View style={{ flexDirection: "row", gap: 8, flexShrink: 0 }}>
           <TouchableOpacity style={styles.headerButton}>
             <Map />
@@ -29,6 +30,7 @@ const HomeScreen = () => {
       {/*location component*/}
       <Location />
       {/*weather overview component*/}
+      <WeatherOverview />
       {/*cloud movement component*/}
       {/*hourly forecast component*/}
       {/*weather details component, maybe not necessary*/}
