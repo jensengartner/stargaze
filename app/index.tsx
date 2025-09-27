@@ -1,5 +1,6 @@
 import { Map, MoonStar } from "lucide-react-native";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import CloudMovement from "../components/CloudMovement";
 import Location from "../components/Location";
 import WeatherOverview from "../components/WeatherOverview";
 
@@ -32,6 +33,7 @@ const HomeScreen = () => {
       {/*weather overview component*/}
       <WeatherOverview />
       {/*cloud movement component*/}
+      <CloudMovement />
       {/*hourly forecast component*/}
       {/*weather details component, maybe not necessary*/}
       {/*celestial events component*/}
