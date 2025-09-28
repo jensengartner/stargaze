@@ -1,12 +1,14 @@
 import { Map, MoonStar } from "lucide-react-native";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import CloudMovement from "../components/CloudMovement";
+import HourlyForecast from "../components/HourlyForecast";
 import Location from "../components/Location";
+import WeatherDetails from "../components/WeatherDetails";
 import WeatherOverview from "../components/WeatherOverview";
 
 const HomeScreen = () => {
   return (
-    <View style={styles.container}>
+    <ScrollView style={{ backgroundColor: "#121212" }} contentContainerStyle={styles.container}>
       {/*header*/}
       <View style={styles.header}>
         <View style={{ flexDirection: "column", flex: 1 }}>
@@ -32,13 +34,15 @@ const HomeScreen = () => {
       <Location />
       {/*weather overview component*/}
       <WeatherOverview />
-      {/*cloud movement component*/}
+      {/*cloud movement component, will change +1hr, +2hr to times*/}
       <CloudMovement />
-      {/*hourly forecast component*/}
+      {/*hourly forecast component, will probably remove*/}
+      <HourlyForecast />
       {/*weather details component, maybe not necessary*/}
+      <WeatherDetails />
       {/*celestial events component*/}
       {/*satellite passes component*/}
-    </View>
+    </ScrollView>
   );
 };
 

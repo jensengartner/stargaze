@@ -16,7 +16,7 @@ const CloudMovement = () => {
         }}
       >
         <Text
-          style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "semibold" }}
+          style={{ color: "#ffffff", fontSize: 18, fontWeight: "600", marginBottom: 8 }}
         >
           Cloud Movement
         </Text>
