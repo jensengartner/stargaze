@@ -1,12 +1,20 @@
 import { Map, MoonStar } from "lucide-react-native";
+import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import CelestialObjects from "../components/CelestialObjects";
 import CloudMovement from "../components/CloudMovement";
 import HourlyForecast from "../components/HourlyForecast";
+import LightPolutionMapModal from "../components/LightPolutionMapModal";
 import Location from "../components/Location";
+import SatellitePasses from "../components/SatellitePasses";
 import WeatherDetails from "../components/WeatherDetails";
 import WeatherOverview from "../components/WeatherOverview";
 
+
 const HomeScreen = () => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+
   return (
     <ScrollView style={{ backgroundColor: "#121212" }} contentContainerStyle={styles.container}>
       {/*header*/}
@@ -19,7 +27,7 @@ const HomeScreen = () => {
         </View>
         {/*buttons*/}
         <View style={{ flexDirection: "row", gap: 8, flexShrink: 0 }}>
-          <TouchableOpacity style={styles.headerButton}>
+          <TouchableOpacity style={styles.headerButton} onPress={() => setModalVisible(true)}>
             <Map />
             Map
           </TouchableOpacity>
@@ -41,7 +49,12 @@ const HomeScreen = () => {
       {/*weather details component, maybe not necessary*/}
       <WeatherDetails />
       {/*celestial events component*/}
+      <CelestialObjects />
       {/*satellite passes component*/}
+      <SatellitePasses />
+
+      {/*map modal*/}
+      <LightPolutionMapModal visible={modalVisible} onClose={() => setModalVisible(false)} />
     </ScrollView>
   );
 };
