@@ -1,6 +1,12 @@
 import { Map, MoonStar } from "lucide-react-native";
-import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import CelestialObjects from "../components/CelestialObjects";
 import CloudMovement from "../components/CloudMovement";
 import HourlyForecast from "../components/HourlyForecast";
@@ -10,13 +16,31 @@ import SatellitePasses from "../components/SatellitePasses";
 import WeatherDetails from "../components/WeatherDetails";
 import WeatherOverview from "../components/WeatherOverview";
 
+import DataFetcher from "./api/DataFetcher";
 
+const selectedLocation = {
+  lat: 39.7456, // Example Latitude (e.g., Kansas/Oklahoma border)
+  lon: -97.0892,
+};
 const HomeScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
+// 1. Location is hardcoded. Using useState only for consistency if you decide to change it later.
+  const [location] = useState(selectedLocation)
 
+  // 2. State to hold the fetched data
+  const [weatherData, setWeatherData] = useState(null);
+  
+  // 3. Callback function to receive data from the DataFetcher child
+  const handleDataFetched = useCallback((data) => {
+    setWeatherData(data);
+    console.log("Parent: Weather data received and set.");
+  }, []);
 
   return (
-    <ScrollView style={{ backgroundColor: "#121212" }} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={{ backgroundColor: "#121212" }}
+      contentContainerStyle={styles.container}
+    >
       {/*header*/}
       <View style={styles.header}>
         <View style={{ flexDirection: "column", flex: 1 }}>
@@ -27,7 +51,10 @@ const HomeScreen = () => {
         </View>
         {/*buttons*/}
         <View style={{ flexDirection: "row", gap: 8, flexShrink: 0 }}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => setModalVisible(true)}
+          >
             <Map />
             Map
           </TouchableOpacity>
@@ -38,10 +65,21 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* The API Component: Triggers the fetch upon mount. 
+          It sends the result back via onDataFetched. */}
+      <DataFetcher
+        latitude={location.lat}
+        longitude={location.lon}
+        onDataFetched={handleDataFetched}
+        // Removed onError since the minimized DataFetcher handles errors internally
+      />
+
+
       {/*location component*/}
       <Location />
       {/*weather overview component*/}
-      <WeatherOverview />
+      <WeatherOverview data={weatherData}/>
       {/*cloud movement component, will change +1hr, +2hr to times*/}
       <CloudMovement />
       {/*hourly forecast component, will probably remove*/}
@@ -54,7 +92,10 @@ const HomeScreen = () => {
       <SatellitePasses />
 
       {/*map modal*/}
-      <LightPolutionMapModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+      <LightPolutionMapModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      />
     </ScrollView>
   );
 };

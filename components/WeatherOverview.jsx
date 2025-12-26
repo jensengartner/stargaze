@@ -1,19 +1,41 @@
 import { Moon } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 
-const WeatherOverview = () => {
+const WeatherOverview = ({data}) => {
+
+    // Return nothing if data is null (meaning the fetch hasn't completed yet)
+  if (!data || !data.properties || !data.properties.periods) {
+    return <Text>Waiting for hourly forecast data...</Text>;
+  }
+
+  // Get the first period (the current or next hour's forecast)
+  const currentPeriod = data.properties.periods[0];
+
+  const { 
+    temperature, 
+    temperatureUnit, 
+    shortForecast, 
+    startTime 
+  } = currentPeriod;
+
+    // Format the time for readability
+  const forecastTime = new Date(startTime).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+  });
+
   return (
     <View style={styles.container}>
       <View style={{ flexDirection: "column", gap: 4 }}>
         <Text style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "bold" }}>
-          Clear Sky
+          {shortForecast}
         </Text>
         <Text style={{ color: "#A0A0A0" }}>Excellent visibility, 10 miles</Text>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Moon style={{ color: "#4D7CFE" }} size={48} />
         <Text style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "bold" }}>
-          58°
+          {temperature}°{temperatureUnit}
         </Text>
       </View>
     </View>
