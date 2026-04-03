@@ -1,66 +1,52 @@
-import { useCallback, useEffect } from "react";
+/**
+ * Triggers hourly weather fetch on mount / when coordinates change.
+ * Delegates HTTP to fetchHourlyForecast in WeatherData.ts.
+ */
 
-const DataFetcher = ({ latitude, longitude, onDataFetched }) => {
-  const fetchHourlyWeather = useCallback(
-    async (lat, lon) => {
-      //check if coordinates are valid
-      if (!lat || !lon) {
-        console.error("DataFetcher: Invalid latitude or longitude received.");
-        return;
-      }
+import { useCallback, useEffect, useRef } from "react";
+import { fetchHourlyForecast, type NwsHourlyForecast } from "./WeatherData";
 
-      // get gridpoint url
-      const pointsUrl = `https://api.weather.gov/points/${lat},${lon}`;
+type Props = {
+  latitude: number;
+  longitude: number;
+  onFetchStart?: () => void;
+  onFetchError?: (message: string) => void;
+  onDataFetched: (data: NwsHourlyForecast) => void;
+};
 
+const DataFetcher = ({
+  latitude,
+  longitude,
+  onFetchStart,
+  onFetchError,
+  onDataFetched,
+}: Props) => {
+  const requestIdRef = useRef(0);
+
+  const runFetch = useCallback(
+    async (lat: number, lon: number) => {
+      const requestId = ++requestIdRef.current;
+      const isStale = () => requestId !== requestIdRef.current;
+
+      onFetchStart?.();
       try {
-        // get gridpoint metedata
-        let response = await fetch(pointsUrl);
-        // error check
-        if (!response.ok) {
-          console.error(`DataFetcher: API Error - Status ${response.status}`);
-          return; // Simply stop on error for the basic version
-        }
-        const gridData = await response.json();
-
-        //extract hourly forecast url
-        const hourlyForecastUrl = gridData.properties.forecastHourly;
-
-        if (!hourlyForecastUrl) {
-          console.error(
-            "Could not find the 'forecastHourly' URL in the initial response."
-          );
-          return;
-        }
-
-        // --- STEP 2: Fetch the Hourly Forecast Data ---
-
-        // 2. Fetch the actual hourly forecast using the URL from Step 1
-        response = await fetch(hourlyForecastUrl);
-        if (!response.ok) {
-          console.error(`Step 2 API Error: Status ${response.status}`);
-          return;
-        }
-
-        const hourlyData = await response.json();
-
-        // SUCCESS: Send the final, detailed data back up to the parent
+        const hourlyData = await fetchHourlyForecast(lat, lon);
+        if (isStale()) return;
         onDataFetched(hourlyData);
-        console.log(
-          "DataFetcher: Hourly forecast data successfully fetched and sent to parent."
-        );
-        console.log('here it is: ', hourlyData)
-      } catch (error) {
-        console.error("DataFetcher: Fetch exception:", error.message);
+      } catch (error: unknown) {
+        if (isStale()) return;
+        const message =
+          error instanceof Error ? error.message : "Unknown fetch error";
+        onFetchError?.(message);
       }
     },
-    [onDataFetched]
+    [onDataFetched, onFetchError, onFetchStart],
   );
 
   useEffect(() => {
-    fetchHourlyWeather(latitude, longitude);
-  }, [latitude, longitude, fetchHourlyWeather]);
+    runFetch(latitude, longitude);
+  }, [latitude, longitude, runFetch]);
 
-  // This component must return JSX, but it can be minimal/invisible
   return null;
 };
 

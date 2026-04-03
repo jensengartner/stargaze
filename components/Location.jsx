@@ -1,14 +1,16 @@
 import { MapPin } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const Location = () => {
+const Location = ({ label, onPressChangeLocation }) => {
   return (
     <View style={styles.container}>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <MapPin style={{ color: "#4D7CFE" }} />
-        <Text style={{ color: "#FFFFFF", fontSize: 16 }}>Los Angeles, CA</Text>
+        <Text style={{ color: "#FFFFFF", fontSize: 16 }}>{label}</Text>
       </View>
-      <Text style={{ color: "#A0A0A0" }}>Change Location</Text>
+      <TouchableOpacity onPress={onPressChangeLocation}>
+        <Text style={{ color: "#A0A0A0" }}>Change Location</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -25,7 +27,6 @@ const styles = StyleSheet.create({
     width: "90%",
     margin: 16,
     padding: 16,
-    borderRadius: 8,
     fontFamily: "System",
   },
 });

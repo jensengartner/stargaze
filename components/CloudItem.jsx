@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 6,
-    width: 60, // match the visual width of the Cloud icon (size + padding*2)
+    width: 60,
   },
 });
 

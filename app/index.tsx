@@ -12,91 +12,136 @@ import CloudMovement from "../components/CloudMovement";
 import HourlyForecast from "../components/HourlyForecast";
 import LightPolutionMapModal from "../components/LightPolutionMapModal";
 import Location from "../components/Location";
+import LocationSearchModal from "../components/LocationSearchModal";
 import SatellitePasses from "../components/SatellitePasses";
 import WeatherDetails from "../components/WeatherDetails";
 import WeatherOverview from "../components/WeatherOverview";
-
 import DataFetcher from "./api/DataFetcher";
+import type { NwsHourlyForecast } from "./api/WeatherData";
 
-const selectedLocation = {
-  lat: 39.7456, // Example Latitude (e.g., Kansas/Oklahoma border)
-  lon: -97.0892,
-};
 const HomeScreen = () => {
-  const [modalVisible, setModalVisible] = useState(false);
-// 1. Location is hardcoded. Using useState only for consistency if you decide to change it later.
-  const [location] = useState(selectedLocation)
+  const [fetchStatus, setFetchStatus] = useState("idle");
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // 2. State to hold the fetched data
-  const [weatherData, setWeatherData] = useState(null);
-  
-  // 3. Callback function to receive data from the DataFetcher child
-  const handleDataFetched = useCallback((data) => {
-    setWeatherData(data);
-    console.log("Parent: Weather data received and set.");
-  }, []);
+  const [selectedLocation, setSelectedLocation] = useState({
+    lat: 34.0522,
+    lon: -118.2437,
+    label: "Los Angeles, CA",
+  });
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+
+  const [weatherData, setWeatherData] = useState<NwsHourlyForecast | null>(
+    null,
+  );
+
+  const handleSelectLocation = useCallback(
+    (loc: { label: string; lat: number; lon: number }) => {
+      setSelectedLocation({
+        label: loc.label,
+        lat: loc.lat,
+        lon: loc.lon,
+      });
+    },
+    [],
+  );
+
+  const handleChangeLocation = () => {
+    setLocationModalVisible(true);
+  };
 
   return (
-    <ScrollView
-      style={{ backgroundColor: "#121212" }}
-      contentContainerStyle={styles.container}
-    >
-      {/*header*/}
-      <View style={styles.header}>
-        <View style={{ flexDirection: "column", flex: 1 }}>
-          <Text style={styles.headerTitle}>Stargaze</Text>
-          <Text style={styles.headerSubtitle}>
-            Perfect viewing conditions tonight
-          </Text>
+    <>
+      <ScrollView
+        style={{ backgroundColor: "#121212" }}
+        contentContainerStyle={styles.container}
+      >
+        {/*header*/}
+        <View style={styles.header}>
+          <View style={{ flexDirection: "column", flex: 1 }}>
+            <Text style={styles.headerTitle}>Stargaze</Text>
+            <Text style={styles.headerSubtitle}>
+              Perfect viewing conditions tonight
+            </Text>
+          </View>
+          {/*buttons*/}
+          <View style={{ flexDirection: "row", gap: 8, flexShrink: 0 }}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => setModalVisible(true)}
+            >
+              <Map />
+              Map
+            </TouchableOpacity>
+            {/*make icon change based on theme*/}
+            <TouchableOpacity style={styles.headerButton}>
+              <MoonStar />
+              Theme
+            </TouchableOpacity>
+          </View>
         </View>
-        {/*buttons*/}
-        <View style={{ flexDirection: "row", gap: 8, flexShrink: 0 }}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setModalVisible(true)}
-          >
-            <Map />
-            Map
-          </TouchableOpacity>
-          {/*make icon change based on theme*/}
-          <TouchableOpacity style={styles.headerButton}>
-            <MoonStar />
-            Theme
-          </TouchableOpacity>
-        </View>
-      </View>
 
-      {/* The API Component: Triggers the fetch upon mount. 
+        {/* The API Component: Triggers the fetch upon mount. 
           It sends the result back via onDataFetched. */}
-      <DataFetcher
-        latitude={location.lat}
-        longitude={location.lon}
-        onDataFetched={handleDataFetched}
-        // Removed onError since the minimized DataFetcher handles errors internally
-      />
+        <DataFetcher
+          latitude={selectedLocation.lat}
+          longitude={selectedLocation.lon}
+          onFetchStart={() => {
+            setFetchStatus("loading");
+            setFetchError(null);
+          }}
+          onFetchError={(message) => {
+            setFetchStatus("error");
+            setFetchError(message);
+          }}
+          onDataFetched={(data: NwsHourlyForecast) => {
+            setFetchStatus("success");
+            setFetchError(null);
+            setWeatherData(data);
+          }}
+        />
 
+        {/*location component*/}
+        <Location
+          label={selectedLocation.label}
+          onPressChangeLocation={handleChangeLocation}
+        />
+        {/*weather overview component*/}
+        <WeatherOverview
+          data={weatherData}
+          fetchStatus={fetchStatus}
+          fetchError={fetchError}
+        />
+        {/*cloud movement component, will change +1hr, +2hr to times*/}
+        <CloudMovement data={weatherData} />
+        {/*hourly forecast component, will probably remove*/}
+        <HourlyForecast
+          data={weatherData}
+          fetchStatus={fetchStatus}
+          fetchError={fetchError}
+        />
+        <WeatherDetails
+          data={weatherData}
+          fetchStatus={fetchStatus}
+          fetchError={fetchError}
+        />
+        {/*celestial events component*/}
+        <CelestialObjects />
+        {/*satellite passes component*/}
+        <SatellitePasses />
+      </ScrollView>
 
-      {/*location component*/}
-      <Location />
-      {/*weather overview component*/}
-      <WeatherOverview data={weatherData}/>
-      {/*cloud movement component, will change +1hr, +2hr to times*/}
-      <CloudMovement />
-      {/*hourly forecast component, will probably remove*/}
-      <HourlyForecast />
-      {/*weather details component, maybe not necessary*/}
-      <WeatherDetails />
-      {/*celestial events component*/}
-      <CelestialObjects />
-      {/*satellite passes component*/}
-      <SatellitePasses />
-
-      {/*map modal*/}
       <LightPolutionMapModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
       />
-    </ScrollView>
+      <LocationSearchModal
+        visible={locationModalVisible}
+        onClose={() => setLocationModalVisible(false)}
+        onSelectLocation={handleSelectLocation}
+      />
+    </>
   );
 };
 

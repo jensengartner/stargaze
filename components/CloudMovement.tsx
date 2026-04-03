@@ -1,10 +1,34 @@
 import { Cloud } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import type { NwsHourlyForecast } from "../app/api/WeatherData";
 import CloudItem from "./CloudItem";
 
-const CloudMovement = () => {
+type Props = {
+  data: NwsHourlyForecast | null;
+  fetchStatus?: string;
+  fetchError?: string | null;
+};
+
+const CloudMovement = ({
+  data,
+  fetchStatus = "idle",
+  fetchError = null,
+}: Props) => {
+  if (fetchError != null && fetchError !== "") {
+    return (
+      <Text style={{ color: "#FF6B6B", width: "90%", margin: 16 }}>
+        {fetchError}
+      </Text>
+    );
+  }
+
+  const hasForecast = (data?.properties?.periods?.length ?? 0) > 0;
+
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      testID={hasForecast ? "cloud-movement-ready" : "cloud-movement-pending"}
+    >
       {/*title and tag*/}
       <View
         style={{
@@ -16,12 +40,17 @@ const CloudMovement = () => {
         }}
       >
         <Text
-          style={{ color: "#ffffff", fontSize: 18, fontWeight: "600", marginBottom: 8 }}
+          style={{
+            color: "#ffffff",
+            fontSize: 18,
+            fontWeight: "600",
+            marginBottom: 8,
+          }}
         >
           Cloud Movement
         </Text>
-        <View style={styles.forcastTag}>
-          <Cloud style={{ color: "#4D7CFE" }} />
+        <View style={styles.forecastTag}>
+          <Cloud color="#4D7CFE" size={18} />
           <Text style={{ color: "#FFFFFF" }}>Clearing</Text>
         </View>
       </View>
@@ -44,7 +73,7 @@ const CloudMovement = () => {
         <Text style={{ fontWeight: "500", color: "#FFFFFF" }}>
           Forecast:{" "}
           <Text style={{ fontWeight: "400", color: "#FFFFFF" }}>
-            Clouds are moving northeast and clearing. Excelent visibility
+            Clouds are moving northeast and clearing. Excellent visibility
             expected within 2 hours.
           </Text>
         </Text>
@@ -59,14 +88,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#1E1E1E",
-    borderRadius: 8,
+    borderRadius: 16,
     width: "90%",
     margin: 16,
     padding: 20,
-    borderRadius: 16,
     fontFamily: "System",
   },
-  forcastTag: {
+  forecastTag: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
