@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import {
-    fetchVisualPasses,
-    formatPassMagnitude,
-    formatPassTimeRange,
-    NORAD_ISS,
+  CURATED_SATELLITES,
+  fetchCuratedVisualPasses,
+  formatPassMagnitude,
+  formatPassTimeRange,
 } from "../app/api/SatelliteData";
 import SatellitePassesItem, {
-    type SatellitePassRow,
+  type SatellitePassRow,
 } from "./SatellitePassesItem";
 
-const MAX_PASSES_SHOWN = 6;
-/** N2YO visual pass window (fewer days = lighter request, fewer 504 timeouts). */
-const PASS_FORECAST_DAYS = 3;
+const MAX_PASSES_SHOWN = 14;
+const LOCATION_DEBOUNCE_MS = 500;
 
 type Props = {
   latitude: number;
@@ -23,26 +22,56 @@ const SatellitePasses = ({ latitude, longitude }: Props) => {
   const [rows, setRows] = useState<SatellitePassRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [partialWarning, setPartialWarning] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  const skipDebounceOnce = useRef(true);
+  const [debouncedCoords, setDebouncedCoords] = useState({
+    lat: latitude,
+    lon: longitude,
+  });
+
+  useEffect(() => {
+    if (skipDebounceOnce.current) {
+      skipDebounceOnce.current = false;
+      return;
+    }
+    const t = setTimeout(() => {
+      setDebouncedCoords({ lat: latitude, lon: longitude });
+    }, LOCATION_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [latitude, longitude]);
 
   const load = useCallback(async () => {
     const id = ++requestIdRef.current;
     const stale = () => id !== requestIdRef.current;
     setLoading(true);
     setError(null);
+    setPartialWarning(null);
     try {
-      const { satName, passes } = await fetchVisualPasses(
-        NORAD_ISS,
-        latitude,
-        longitude,
-        0,
-        PASS_FORECAST_DAYS,
-        90,
+      const { passes, failedSatelliteCount } = await fetchCuratedVisualPasses(
+        debouncedCoords.lat,
+        debouncedCoords.lon,
       );
       if (stale()) return;
+
+      if (
+        failedSatelliteCount > 0 &&
+        failedSatelliteCount < CURATED_SATELLITES.length
+      ) {
+        if (passes.length > 0) {
+          setPartialWarning(
+            `Some satellites could not be loaded (${failedSatelliteCount} of ${CURATED_SATELLITES.length}).`,
+          );
+        } else {
+          setPartialWarning(
+            `No passes in the next 24 hours; ${failedSatelliteCount} of ${CURATED_SATELLITES.length} sources failed to load.`,
+          );
+        }
+      }
+
       const mapped: SatellitePassRow[] = passes
         .slice(0, MAX_PASSES_SHOWN)
-        .map((p, i) => {
+        .map((p) => {
           const startMs = p.startUTC * 1000;
           const endMs = p.endUTC * 1000;
           const magStr = formatPassMagnitude(p.mag);
@@ -53,8 +82,8 @@ const SatellitePasses = ({ latitude, longitude }: Props) => {
             magStr,
           ].filter(Boolean);
           return {
-            id: `${p.startUTC}-${i}`,
-            name: satName,
+            id: `${p.noradId}-${p.startUTC}`,
+            name: p.satName,
             timeRange: formatPassTimeRange(startMs, endMs),
             detail: detailParts.join(" · "),
             visible: el >= 20,
@@ -69,7 +98,7 @@ const SatellitePasses = ({ latitude, longitude }: Props) => {
     } finally {
       if (!stale()) setLoading(false);
     }
-  }, [latitude, longitude]);
+  }, [debouncedCoords.lat, debouncedCoords.lon]);
 
   useEffect(() => {
     load();
@@ -79,16 +108,20 @@ const SatellitePasses = ({ latitude, longitude }: Props) => {
     <View style={styles.container}>
       <Text style={styles.title}>Satellite Passes</Text>
       <Text style={styles.credit}>
-        Pass predictions from N2YO (ISS). Add EXPO_PUBLIC_N2YO_API_KEY in .env.
+        Next 24 hours · {CURATED_SATELLITES.length} satellites · Predictions
+        from N2YO. Add EXPO_PUBLIC_N2YO_API_KEY in project-root .env if missing.
       </Text>
+      {partialWarning != null ? (
+        <Text style={styles.warning}>{partialWarning}</Text>
+      ) : null}
       {loading ? (
         <Text style={styles.muted}>Loading passes…</Text>
       ) : error != null ? (
         <Text style={styles.error}>{error}</Text>
       ) : rows.length === 0 ? (
         <Text style={styles.muted}>
-          No ISS passes in the next {PASS_FORECAST_DAYS} days with the current
-          filters — try again later or lower min. visibility in code.
+          No visual passes in the next 24 hours for these satellites at this
+          location — try again later or pick another evening.
         </Text>
       ) : (
         <View style={styles.list}>
@@ -121,6 +154,11 @@ const styles = StyleSheet.create({
     color: "#707070",
     fontSize: 11,
     marginBottom: 12,
+  },
+  warning: {
+    color: "#C9A227",
+    fontSize: 12,
+    marginBottom: 10,
   },
   list: {
     flexDirection: "column",

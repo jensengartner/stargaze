@@ -114,7 +114,11 @@ const HomeScreen = () => {
           fetchError={fetchError}
         />
         {/*cloud movement component, will change +1hr, +2hr to times*/}
-        <CloudMovement data={weatherData} />
+        <CloudMovement
+          data={weatherData}
+          fetchStatus={fetchStatus}
+          fetchError={fetchError}
+        />
         {/*hourly forecast component, will probably remove*/}
         <HourlyForecast
           data={weatherData}
