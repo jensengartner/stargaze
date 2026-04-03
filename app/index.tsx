@@ -126,10 +126,14 @@ const HomeScreen = () => {
           fetchStatus={fetchStatus}
           fetchError={fetchError}
         />
-        {/*celestial events component*/}
-        <CelestialObjects />
-        {/*satellite passes component*/}
-        <SatellitePasses />
+        <CelestialObjects
+          latitude={selectedLocation.lat}
+          longitude={selectedLocation.lon}
+        />
+        <SatellitePasses
+          latitude={selectedLocation.lat}
+          longitude={selectedLocation.lon}
+        />
       </ScrollView>
 
       <LightPolutionMapModal
@@ -147,7 +151,7 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    paddingBottom: 24,
     alignItems: "center",
     backgroundColor: "#121212",
     color: "#ffffff",
