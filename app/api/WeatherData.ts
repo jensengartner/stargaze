@@ -56,6 +56,99 @@ export function formatPrecipitationPercent(
   return `${Math.round(Number(v))}%`;
 }
 
+/** Open-Meteo hourly cloud cover, anchored from the current hour via forecast_hours. */
+
+export type OpenMeteoHourlyCloud = {
+  hourly?: {
+    time: string[];
+    cloud_cover: (number | null)[];
+  };
+};
+
+export async function fetchOpenMeteoHourlyCloudCover(
+  lat: number,
+  lon: number,
+  forecastHours = 12,
+): Promise<OpenMeteoHourlyCloud> {
+  const params = new URLSearchParams({
+    latitude: String(lat),
+    longitude: String(lon),
+    hourly: "cloud_cover",
+    forecast_hours: String(forecastHours),
+    timezone: "auto",
+  });
+  const url = `https://api.open-meteo.com/v1/forecast?${params}`;
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch hourly cloud cover: ${res.statusText}`);
+  }
+  return (await res.json()) as OpenMeteoHourlyCloud;
+}
+
+/** Map an NWS hourly period start time to the nearest Open-Meteo cloud_cover (%). */
+export function cloudCoverPercentForNwsPeriod(
+  openMeteo: OpenMeteoHourlyCloud | null | undefined,
+  nwsStartIso: string | undefined,
+): number | null {
+  const times = openMeteo?.hourly?.time;
+  const covers = openMeteo?.hourly?.cloud_cover;
+  if (
+    nwsStartIso == null ||
+    nwsStartIso === "" ||
+    times == null ||
+    covers == null ||
+    times.length === 0
+  ) {
+    return null;
+  }
+
+  const target = new Date(nwsStartIso).getTime();
+  if (Number.isNaN(target)) return null;
+
+  let bestIdx = -1;
+  let bestDiff = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const t = new Date(times[i]).getTime();
+    if (Number.isNaN(t)) continue;
+    const diff = Math.abs(t - target);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIdx = i;
+    }
+  }
+
+  if (bestIdx < 0 || bestDiff > 90 * 60 * 1000) return null;
+  const v = covers[bestIdx];
+  if (v == null || Number.isNaN(Number(v))) return null;
+  return Math.round(Number(v));
+}
+
+export function formatCloudCoverPercent(pct: number | null): string {
+  if (pct == null) return "—";
+  return `${pct}%`;
+}
+
+/** One-line stargazing hint from Open-Meteo total cloud cover (%). */
+export function stargazingSubtitleFromCloudCover(
+  cloudCoverPercent: number | null,
+): string {
+  if (cloudCoverPercent == null) {
+    return "Cloud outlook unavailable";
+  }
+  const p = cloudCoverPercent;
+  if (p <= 25) {
+    return "Great for stargazing";
+  }
+  if (p <= 50) {
+    return "Mixed sky — some clear windows likely";
+  }
+  if (p <= 75) {
+    return "Often cloudy — stargazing may be limited";
+  }
+  return "Mostly overcast — poor for stars";
+}
+
 /** Readable cloud/sky line from NWS shortForecast (no numeric cover in API). */
 export function shortForecastToCloudCoverage(
   shortForecast: string | undefined,

@@ -4,7 +4,12 @@
  */
 
 import { useCallback, useEffect, useRef } from "react";
-import { fetchHourlyForecast, type NwsHourlyForecast } from "./WeatherData";
+import {
+  fetchHourlyForecast,
+  fetchOpenMeteoHourlyCloudCover,
+  type NwsHourlyForecast,
+  type OpenMeteoHourlyCloud,
+} from "./WeatherData";
 
 type Props = {
   latitude: number;
@@ -12,6 +17,7 @@ type Props = {
   onFetchStart?: () => void;
   onFetchError?: (message: string) => void;
   onDataFetched: (data: NwsHourlyForecast) => void;
+  onCloudMeteoFetched?: (data: OpenMeteoHourlyCloud) => void;
 };
 
 const DataFetcher = ({
@@ -20,6 +26,7 @@ const DataFetcher = ({
   onFetchStart,
   onFetchError,
   onDataFetched,
+  onCloudMeteoFetched,
 }: Props) => {
   const requestIdRef = useRef(0);
 
@@ -38,9 +45,17 @@ const DataFetcher = ({
         const message =
           error instanceof Error ? error.message : "Unknown fetch error";
         onFetchError?.(message);
+        return;
+      }
+      try {
+        const cloudMeteo = await fetchOpenMeteoHourlyCloudCover(lat, lon);
+        if (isStale()) return;
+        onCloudMeteoFetched?.(cloudMeteo);
+      } catch {
+        /* NWS data already shown; cloud % stays cleared or previous */
       }
     },
-    [onDataFetched, onFetchError, onFetchStart],
+    [onCloudMeteoFetched, onDataFetched, onFetchError, onFetchStart],
   );
 
   useEffect(() => {

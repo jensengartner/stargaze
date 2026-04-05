@@ -1,15 +1,22 @@
 import { Moon } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import type { NwsHourlyForecast } from "../app/api/WeatherData";
+import {
+  cloudCoverPercentForNwsPeriod,
+  stargazingSubtitleFromCloudCover,
+  type NwsHourlyForecast,
+  type OpenMeteoHourlyCloud,
+} from "../app/api/WeatherData";
 
 type Props = {
   data: unknown;
+  openMeteoCloud?: OpenMeteoHourlyCloud | null;
   fetchStatus?: string;
   fetchError?: string | null;
 };
 
 const WeatherOverview = ({
   data,
+  openMeteoCloud = null,
   fetchStatus = "idle",
   fetchError = null,
 }: Props) => {
@@ -23,10 +30,7 @@ const WeatherOverview = ({
 
   const payload = data as NwsHourlyForecast | null | undefined;
 
-  if (
-    fetchStatus === "loading" &&
-    (!payload?.properties?.periods?.length)
-  ) {
+  if (fetchStatus === "loading" && !payload?.properties?.periods?.length) {
     return (
       <Text style={{ color: "#A0A0A0", width: "90%", margin: 16 }}>
         Loading weather…
@@ -43,12 +47,11 @@ const WeatherOverview = ({
   }
 
   const currentPeriod = payload.properties.periods[0];
-  const {
-    temperature,
-    temperatureUnit,
-    shortForecast,
-    startTime,
-  } = currentPeriod;
+  const { temperature, temperatureUnit, shortForecast, startTime } =
+    currentPeriod;
+
+  const cloudPct = cloudCoverPercentForNwsPeriod(openMeteoCloud, startTime);
+  const stargazingLine = stargazingSubtitleFromCloudCover(cloudPct);
 
   return (
     <View style={styles.container}>
@@ -56,15 +59,7 @@ const WeatherOverview = ({
         <Text style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "bold" }}>
           {shortForecast}
         </Text>
-        <Text style={{ color: "#A0A0A0" }}>
-          {startTime != null
-            ? `${new Date(startTime).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })} · `
-            : ""}
-          Excellent visibility, 10 miles
-        </Text>
+        <Text style={{ color: "#A0A0A0" }}>{stargazingLine}</Text>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Moon color="#4D7CFE" size={48} />

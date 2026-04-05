@@ -2,24 +2,28 @@ import { Cloud } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
 import {
   buildCloudMovementSummary,
+  cloudCoverPercentForNwsPeriod,
+  formatCloudCoverPercent,
   formatHourlyCardTimeLabel,
   inferSkyTrend,
-  shortForecastToCloudCoverage,
   sliceCloudMovementDisplayPeriods,
   sliceCloudMovementWindow,
   windDirectionToDownwindLabel,
   type NwsHourlyForecast,
+  type OpenMeteoHourlyCloud,
 } from "../app/api/WeatherData";
 import CloudItem from "./CloudItem";
 
 type Props = {
   data: NwsHourlyForecast | null;
+  openMeteoCloud?: OpenMeteoHourlyCloud | null;
   fetchStatus?: string;
   fetchError?: string | null;
 };
 
 const CloudMovement = ({
   data,
+  openMeteoCloud = null,
   fetchStatus = "idle",
   fetchError = null,
 }: Props) => {
@@ -78,7 +82,8 @@ const CloudMovement = ({
       </View>
 
       <Text style={styles.subtitle}>
-        Next ~4 hours · Direction letters are downwind (where low clouds often move from surface wind).
+        Next ~4 hours · Direction letters are downwind (where low clouds often
+        move from surface wind).
       </Text>
 
       <View style={styles.itemsRow}>
@@ -86,7 +91,12 @@ const CloudMovement = ({
           <CloudItem
             key={period.startTime ?? `cm-${index}`}
             timeLabel={formatHourlyCardTimeLabel(period, index + 1)}
-            skySummary={shortForecastToCloudCoverage(period.shortForecast)}
+            skySummary={formatCloudCoverPercent(
+              cloudCoverPercentForNwsPeriod(
+                openMeteoCloud,
+                period.startTime,
+              ),
+            )}
             windSpeed={period.windSpeed?.trim() ?? ""}
             driftTowardLabel={windDirectionToDownwindLabel(
               period.windDirection,

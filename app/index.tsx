@@ -17,7 +17,12 @@ import SatellitePasses from "../components/SatellitePasses";
 import WeatherDetails from "../components/WeatherDetails";
 import WeatherOverview from "../components/WeatherOverview";
 import DataFetcher from "./api/DataFetcher";
-import type { NwsHourlyForecast } from "./api/WeatherData";
+import {
+  cloudCoverPercentForNwsPeriod,
+  stargazingSubtitleFromCloudCover,
+  type NwsHourlyForecast,
+  type OpenMeteoHourlyCloud,
+} from "./api/WeatherData";
 
 const HomeScreen = () => {
   const [fetchStatus, setFetchStatus] = useState("idle");
@@ -35,6 +40,8 @@ const HomeScreen = () => {
   const [weatherData, setWeatherData] = useState<NwsHourlyForecast | null>(
     null,
   );
+  const [openMeteoCloud, setOpenMeteoCloud] =
+    useState<OpenMeteoHourlyCloud | null>(null);
 
   const handleSelectLocation = useCallback(
     (loc: { label: string; lat: number; lon: number }) => {
@@ -51,6 +58,20 @@ const HomeScreen = () => {
     setLocationModalVisible(true);
   };
 
+  const periods = weatherData?.properties?.periods;
+  let headerStargazingSubtitle: string;
+  if (fetchError != null && fetchError !== "") {
+    headerStargazingSubtitle = "Forecast unavailable";
+  } else if (fetchStatus === "loading" && !periods?.length) {
+    headerStargazingSubtitle = "Loading weather…";
+  } else if (!periods?.length) {
+    headerStargazingSubtitle = "Waiting for hourly forecast data…";
+  } else {
+    headerStargazingSubtitle = stargazingSubtitleFromCloudCover(
+      cloudCoverPercentForNwsPeriod(openMeteoCloud, periods[0].startTime),
+    );
+  }
+
   return (
     <>
       <ScrollView
@@ -62,7 +83,7 @@ const HomeScreen = () => {
           <View style={{ flexDirection: "column", flex: 1 }}>
             <Text style={styles.headerTitle}>Stargaze</Text>
             <Text style={styles.headerSubtitle}>
-              Perfect viewing conditions tonight
+              {headerStargazingSubtitle}
             </Text>
           </View>
           {/*buttons*/}
@@ -90,6 +111,7 @@ const HomeScreen = () => {
           onFetchStart={() => {
             setFetchStatus("loading");
             setFetchError(null);
+            setOpenMeteoCloud(null);
           }}
           onFetchError={(message) => {
             setFetchStatus("error");
@@ -99,6 +121,9 @@ const HomeScreen = () => {
             setFetchStatus("success");
             setFetchError(null);
             setWeatherData(data);
+          }}
+          onCloudMeteoFetched={(cloud) => {
+            setOpenMeteoCloud(cloud);
           }}
         />
 
@@ -110,12 +135,14 @@ const HomeScreen = () => {
         {/*weather overview component*/}
         <WeatherOverview
           data={weatherData}
+          openMeteoCloud={openMeteoCloud}
           fetchStatus={fetchStatus}
           fetchError={fetchError}
         />
         {/*cloud movement component, will change +1hr, +2hr to times*/}
         <CloudMovement
           data={weatherData}
+          openMeteoCloud={openMeteoCloud}
           fetchStatus={fetchStatus}
           fetchError={fetchError}
         />
